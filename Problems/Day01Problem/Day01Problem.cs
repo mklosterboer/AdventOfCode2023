@@ -38,42 +38,11 @@ namespace AdventOfCode2023.Problems
             foreach (var value in CalibrationValues)
             {
                 var (first, last) = FindDigits(value);
-                var numberString = first.digit.ToString() + last.digit.ToString();
+                var numberString = first.Digit.ToString() + last.Digit.ToString();
 
                 var calibrationValue = int.Parse(numberString);
 
-                Console.WriteLine("");
-                for (var i = 0; i < value.Length; i++)
-                {
-                    if (first.index == i)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        for (var j = 0; j < first.length; j++)
-                        {
-                            Console.Write(value[i + j]);
-                        }
-                        i += first.length - 1;
-                        Console.ForegroundColor = ConsoleColor.White;
-                        continue;
-                    }
-
-                    if (last.index == i)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        for (var j = 0; j < last.length; j++)
-                        {
-                            Console.Write(value[i + j]);
-                        }
-                        i += last.length - 1;
-                        Console.ForegroundColor = ConsoleColor.White;
-                        continue;
-                    }
-                    Console.Write(value[i]);
-
-                    Console.ForegroundColor = ConsoleColor.White;
-                }
-
-                Console.Write($" - {calibrationValue}");
+                PrintLine(value, first, last, calibrationValue);
 
                 result += calibrationValue;
             }
@@ -83,23 +52,23 @@ namespace AdventOfCode2023.Problems
             return result;
         }
 
-        private ((int digit, int index, int length) first, (int digit, int index, int length) last) FindDigits(string value)
+        private (FoundNumber first, FoundNumber last) FindDigits(string value)
         {
             var result = Enumerable.Empty<int>();
 
-            var numberMapping = new List<(int digit, int index, int length)>();
+            var numberMapping = new List<FoundNumber>();
 
             numberMapping.AddRange(FindIntegerMappings(value));
             numberMapping.AddRange(FindWordMappings(value));
 
-            var orderedList = numberMapping.OrderBy(x => x.index);
+            var orderedList = numberMapping.OrderBy(x => x.Index);
 
             return new(orderedList.First(), orderedList.Last());
         }
 
-        private List<(int digit, int index, int length)> FindIntegerMappings(string value)
+        private List<FoundNumber> FindIntegerMappings(string value)
         {
-            var result = new List<(int digit, int index, int length)>();
+            var result = new List<FoundNumber>();
 
             for (var i = 0; i < value.Length; i++)
             {
@@ -114,9 +83,9 @@ namespace AdventOfCode2023.Problems
             return result;
         }
 
-        private List<(int digit, int index, int length)> FindWordMappings(string value)
+        private List<FoundNumber> FindWordMappings(string value)
         {
-            var result = new List<(int digit, int index, int length)>();
+            var result = new List<FoundNumber>();
 
             result.AddRange(GetRegexMatches(value, "one", 1));
             result.AddRange(GetRegexMatches(value, "two", 2));
@@ -131,22 +100,57 @@ namespace AdventOfCode2023.Problems
             return result;
         }
 
-        private static List<(int digit, int index, int length)> GetRegexMatches(
-            string value, string word, int wordValue)
+        private static List<FoundNumber> GetRegexMatches(string value, string word, int wordValue)
         {
-            var result = new List<(int digit, int index, int length)> ();
+            var result = new List<FoundNumber>();
             var regex = new Regex($@"(?'{word}'{word})");
 
-            foreach(Match m in regex.Matches(value))
+            foreach (Match m in regex.Matches(value))
             {
                 var group = m.Groups[word];
                 if (group.Success)
                 {
-                    result.Add(new (wordValue, group.Index, group.Length));
+                    result.Add(new(wordValue, group.Index, group.Length));
                 }
             }
 
             return result;
+        }
+
+        private static void PrintLine(string input, FoundNumber first, FoundNumber last, int value)
+        {
+            Console.WriteLine("");
+            for (var i = 0; i < input.Length; i++)
+            {
+                if (first.Index == i)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    for (var j = 0; j < first.Length; j++)
+                    {
+                        Console.Write(input[i + j]);
+                    }
+                    i += first.Length - 1;
+                    Console.ForegroundColor = ConsoleColor.White;
+                    continue;
+                }
+
+                if (last.Index == i)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    for (var j = 0; j < last.Length; j++)
+                    {
+                        Console.Write(input[i + j]);
+                    }
+                    i += last.Length - 1;
+                    Console.ForegroundColor = ConsoleColor.White;
+                    continue;
+                }
+                Console.Write(input[i]);
+
+                Console.ForegroundColor = ConsoleColor.White;
+            }
+
+            Console.Write($" - {value}");
         }
 
         [GeneratedRegex(@"^[^\d]*(?'first'\d{1})")]
@@ -154,5 +158,7 @@ namespace AdventOfCode2023.Problems
 
         [GeneratedRegex(@"(.*)(?'last'\d{1})(.*)$")]
         private static partial Regex LastParser();
+
+        private record FoundNumber(int Digit, int Index, int Length);
     }
 }
