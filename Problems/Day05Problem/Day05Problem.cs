@@ -20,7 +20,7 @@ namespace AdventOfCode2023.Problems
             return seeds.Min(x => x.Location);
         }
 
-        // BRUTE FORCE - DON'T DO THIS - TOOK 38 MINUTES
+        // BRUTE FORCE - DON'T DO THIS - TOOK ~3 MINUTES with 8 cores
         public override object PartTwo()
         {
             var input = GetInputStringList().ToList();
@@ -30,6 +30,7 @@ namespace AdventOfCode2023.Problems
             var seedPairs = new Regex(@"\d+ \d+")
                 .Matches(GetFirstRow().Split(":")[1])
                 .Select(x => x.Value.Split(" ").Select(y => long.Parse(y)).ToArray());
+
             var seedRanges = seedPairs.Select(x => new SeedRange(x[0], x[1]));
 
             object lockMinLocation = new();
@@ -39,17 +40,17 @@ namespace AdventOfCode2023.Problems
             {
                 var localMinLocation = long.MaxValue;
                 var end = seedRange.Start + seedRange.Length;
-                for (var i = seedRange.Start; i < end; i++)
+
+                long endCurrentRange = 1;
+
+                for (var i = seedRange.Start; i < end; i += endCurrentRange)
                 {
                     var seed = seedFactory.Create(i);
+                    endCurrentRange = seed.RangeEnd;
 
                     if (seed.Location < minLocation)
                     {
                         minLocation = seed.Location;
-                    }
-                    if (i % 1000000 == 0)
-                    {
-                        Console.WriteLine($"{seedRange.Start} - Remaining {end - i}");
                     }
                 }
                 lock (lockMinLocation)
@@ -58,7 +59,6 @@ namespace AdventOfCode2023.Problems
                     {
                         minLocation = localMinLocation;
                     }
-
                 }
                 Console.WriteLine($"Done {seedRange.Start} {seedRange.Length}");
             });
@@ -66,7 +66,7 @@ namespace AdventOfCode2023.Problems
             return minLocation;
         }
 
-        public class Mapping
+        private class Mapping
         {
             private List<MapRange> Ranges { get; init; }
 
@@ -98,21 +98,33 @@ namespace AdventOfCode2023.Problems
                 }
             }
 
-            public long GetMappedValue(long value)
+            public (long value, long endOfRange) GetMappedValue(long value)
             {
                 foreach (var range in Ranges)
                 {
-                    if (range.TryGetDestination(value, out var destination))
+                    if (TryGetDestination(range, value, out var destination))
                     {
-                        return destination;
+                        return (destination, range.SourceEnd);
                     }
                 }
 
-                return value;
+                return (value, 1);
+            }
+
+            public static bool TryGetDestination(MapRange range, long source, out long destination)
+            {
+                if (source >= range.SourceStart && source <= range.SourceEnd)
+                {
+                    destination = range.DestinationStart + (source - range.SourceStart);
+                    return true;
+                }
+
+                destination = 0;
+                return false;
             }
         }
 
-        private record Seed(long Id, long Soil, long Fert, long Water, long Light, long Temp, long Humidity, long Location);
+        private record Seed(long Id, long Soil, long Fert, long Water, long Light, long Temp, long Humidity, long Location, long RangeEnd);
 
         private class SeedFactory(List<string> input)
         {
@@ -127,43 +139,27 @@ namespace AdventOfCode2023.Problems
             public Seed Create(long seedId)
             {
                 var soil = SeedToSoilMap.GetMappedValue(seedId);
-                var fert = SoilToFertMap.GetMappedValue(soil);
-                var water = FertToWaterMap.GetMappedValue(fert);
-                var light = WaterToLightMap.GetMappedValue(water);
-                var temp = LightToTempMap.GetMappedValue(light);
-                var humidity = TempToHumidityMap.GetMappedValue(temp);
-                var location = HumidityToLocationMap.GetMappedValue(humidity);
+                var fert = SoilToFertMap.GetMappedValue(soil.value);
+                var water = FertToWaterMap.GetMappedValue(fert.value);
+                var light = WaterToLightMap.GetMappedValue(water.value);
+                var temp = LightToTempMap.GetMappedValue(light.value);
+                var humidity = TempToHumidityMap.GetMappedValue(temp.value);
+                var location = HumidityToLocationMap.GetMappedValue(humidity.value);
 
-                return new Seed(seedId, soil, fert, water, light, temp, humidity, location);
+                // We can skip forward by the minimum value of the rest of any given the range.
+                // EX 1: If fert.endOfRange = 1, it was not in a supplied range, so we cannot skip anything
+                // EX 2: If fert.endOfRange = 10 and water.endOfRange = 20 and the rest are >20, we can skip the next 10 seeds because
+                //       the next 10 ferts will produce a larger water number and everything else will also continue sequentially up.
+                //       Therefore, none of the next 10 seeds are going to produce a location smaller than this one.
+                long[] endOfRange = [soil.endOfRange, fert.endOfRange, water.endOfRange, light.endOfRange, temp.endOfRange, humidity.endOfRange, location.endOfRange];
+
+                return new Seed(seedId, soil.value, fert.value, water.value, light.value, temp.value, humidity.value, location.value, endOfRange.Min());
             }
         }
 
-        private class MapRange(long sourceStart, long destinationStart, long length)
+        private record MapRange(long SourceStart, long DestinationStart, long Length)
         {
-            public long SourceStart { get; init; } = sourceStart;
-
-            public long SourceEnd { get; init; } = sourceStart + length;
-
-            public long DestinationStart { get; init; } = destinationStart;
-
-            public bool TryGetDestination(long source, out long destination)
-            {
-                if (Contains(source))
-                {
-                    var offset = source - SourceStart;
-
-                    destination = DestinationStart + offset;
-                    return true;
-                }
-
-                destination = 0;
-                return false;
-            }
-
-            private bool Contains(long value)
-            {
-                return value >= SourceStart && value <= SourceEnd;
-            }
+            public long SourceEnd { get; init; } = SourceStart + Length;
         }
 
         private record SeedRange(long Start, long Length);
