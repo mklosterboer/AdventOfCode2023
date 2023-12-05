@@ -3,53 +3,49 @@ using System.Text.RegularExpressions;
 
 namespace AdventOfCode2023.Problems
 {
-    internal partial class Day04Problem : Problem
+    internal class Day04Problem : Problem
     {
         protected override string InputName => "Actual";
 
-        private IEnumerable<string> Input { get; init; }
+        private IEnumerable<Card> Cards { get; init; }
 
         public Day04Problem()
         {
-            Input = GetInputStringList();
+            Cards = GetInputStringList().Select(x => new Card(x));
         }
 
         public override object PartOne()
         {
-            return Input
-                .Select(x => new Card(x))
-                .Sum(x => x.Points);
+            return Cards.Sum(x => x.Points);
         }
 
         public override object PartTwo()
         {
-            var cards = Input
-                .Select(x => new Card(x))
+            var cardsDictionary = Cards
                 .ToDictionary(x => x.Number);
 
-            for (var i = 1; i < cards.Count; i++)
+            for (var i = 1; i < cardsDictionary.Count; i++)
             {
-                var card = cards[i];
+                var card = cardsDictionary[i];
 
-                foreach (var instance in card.CardsWon)
+                foreach (var cardNumber in card.CardsWon)
                 {
-                    cards[instance].AddInstances(1 * card.InstanceCount);
+                    cardsDictionary[cardNumber].AddInstances(card.InstanceCount);
                 }
             }
 
-            return cards.Values.Sum(x => x.InstanceCount);
+            return cardsDictionary.Values.Sum(x => x.InstanceCount);
         }
 
-        private partial class Card
+        private class Card
         {
             public int Number { get; init; }
 
-            private int NumWinningNumbers { get; init; }
-
             public int InstanceCount { get; private set; }
 
-            [GeneratedRegex(@"\d+")]
-            private static partial Regex NumberRegex();
+            private int WinningNumbersCount { get; init; }
+
+            private static Regex NumberRegex = new(@"\d+");
 
             public Card(string input)
             {
@@ -57,28 +53,26 @@ namespace AdventOfCode2023.Problems
 
                 var splitString = input.Split(':');
 
-                Number = int.Parse(NumberRegex().Match(splitString[0]).Value);
+                Number = int.Parse(NumberRegex.Match(splitString[0]).Value);
 
-                var numberString = splitString[1].Split("|");
+                var numbersString = splitString[1].Split("|");
 
-                var winningNumbers = NumberRegex()
-                    .Matches(numberString[0])
-                    .Select(match => int.Parse(match.Value))
-                    .ToHashSet();
+                var winningNumbers = NumberRegex
+                    .Matches(numbersString[0])
+                    .Select(match => int.Parse(match.Value));
 
-                var myNumbers = NumberRegex()
-                     .Matches(numberString[1])
-                     .Select(match => int.Parse(match.Value))
-                     .ToHashSet();
+                var myNumbers = NumberRegex
+                     .Matches(numbersString[1])
+                     .Select(match => int.Parse(match.Value));
 
-                NumWinningNumbers = winningNumbers.Intersect(myNumbers).Count();
+                WinningNumbersCount = winningNumbers.Intersect(myNumbers).Count();
             }
 
-            public int Points => (int)Math.Pow(2, NumWinningNumbers - 1);
+            public int Points => (int)Math.Pow(2, WinningNumbersCount - 1);
 
-            public IEnumerable<int> CardsWon => NumWinningNumbers == 0
+            public IEnumerable<int> CardsWon => WinningNumbersCount == 0
                 ? []
-                : Enumerable.Range(Number + 1, NumWinningNumbers);
+                : Enumerable.Range(Number + 1, WinningNumbersCount);
 
             public void AddInstances(int instancesToAdd) =>
                 InstanceCount += instancesToAdd;
