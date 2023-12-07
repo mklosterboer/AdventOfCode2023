@@ -41,7 +41,7 @@ namespace AdventOfCode2023.Problems
             var humdityRanges = SeedFactory.GetMapRanges(tempRanges, seedFactory.TempToHumidityMap);
             var locationRanges = SeedFactory.GetMapRanges(humdityRanges, seedFactory.HumidityToLocationMap);
 
-            return locationRanges.MinBy(x => x.Start).Start;
+            return locationRanges?.MinBy(x => x.Start)?.Start ?? 0;
         }
 
         private class Mapping

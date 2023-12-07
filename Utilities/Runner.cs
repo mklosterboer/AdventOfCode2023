@@ -42,7 +42,7 @@ namespace AdventOfCode2023.Utilities
         private string GetExecutionTime()
         {
             Stopwatch.Stop();
-            return Stopwatch.ElapsedMilliseconds.ToString("F10");
+            return Stopwatch.Elapsed.TotalMilliseconds.ToString("F4");
         }
     }
 }

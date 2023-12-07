@@ -12,4 +12,4 @@ runner.Run();
 
 stopwatch.Stop();
 
-Console.WriteLine($"Total runtime: {stopwatch.ElapsedMilliseconds:F10} ms");
+Console.WriteLine($"Total runtime: {stopwatch.Elapsed.TotalMilliseconds:F4} ms");

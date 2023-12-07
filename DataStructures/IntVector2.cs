@@ -10,6 +10,6 @@
             return $"[{X}, {Y}]";
         }
 
-        bool IEquatable<IntVector2>.Equals(IntVector2 other) => X == other.X && Y == other.Y;
+        bool IEquatable<IntVector2>.Equals(IntVector2? other) => X == other?.X && Y == other.Y;
     }
 }
