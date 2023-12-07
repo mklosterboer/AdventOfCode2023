@@ -5,50 +5,68 @@ namespace AdventOfCode2023.Problems
 {
     internal partial class Day06Problem : Problem
     {
-        protected override string InputName => "Actual";
+        protected override string InputName => "Test";
+
+        private string[] Input;
+
+        public Day06Problem()
+        {
+            Input = GetInputStringList().ToArray();
+        }
 
         public override object PartOne()
         {
-            var input = GetInputStringList().ToArray();
+            var times = GetDigits()
+                .Matches(Input[0].Split(":")[1])
+                .Select(x => int.Parse(x.Value)).ToArray();
+            var distances = GetDigits()
+                .Matches(Input[1] .Split(":")[1])
+                .Select(x => int.Parse(x.Value)).ToArray();
 
-            var times = GetDigits().Matches(input[0].Split(":")[1]).Select(x => int.Parse(x.Value)).ToArray();
-            var distances = GetDigits().Matches(input[1].Split(":")[1]).Select(x => int.Parse(x.Value)).ToArray();
-
-            var races = Enumerable.Range(0, times.Length).Select(x => new { time = times[x], recordDistance = distances[x] }).ToList();
-
-            return races
-                .Select(race => GetWinSum(race.time, race.recordDistance))
+            return Enumerable.Range(0, times.Length)
+                .Select(x => GetWinSum(times[x], distances[x]))
                 .Aggregate((long)1, (acc, val) => acc * val);
         }
 
         public override object PartTwo()
         {
-            var input = GetInputStringList().ToArray();
-
-            var raceTime = GetDigits().Matches(input[0].Split(":")[1].Replace(" ", "")).Select(x => long.Parse(x.Value)).First();
-            var recordDistance = GetDigits().Matches(input[1].Split(":")[1].Replace(" ", "")).Select(x => long.Parse(x.Value)).First();
+            var raceTime = long.Parse(Input[0].Split(":")[1].Replace(" ", ""));
+            var recordDistance = long.Parse(Input[1].Split(":")[1].Replace(" ", ""));
 
             return GetWinSum(raceTime, recordDistance);
         }
 
         private static long GetWinSum(long raceTime, long recordDistance)
         {
-            var winSum = 0;
+            var sqrt = Math.Sqrt(raceTime * raceTime - 4 * recordDistance);
+            var pos = (sqrt - raceTime) / -2;
+            var neg = (-sqrt - raceTime) / -2;
 
-            for (var i = 1; i < raceTime - 1; i++)
+            if (neg < pos)
             {
-                var holdTime = i;
-                var moveTime = raceTime - holdTime;
+                return GetRange(neg, pos);
+            }
+            else
+            {
+                return GetRange(pos, neg);
+            }
+        }
 
-                var distance = moveTime * holdTime;
-
-                if (distance > recordDistance)
-                {
-                    winSum++;
-                }
+        private static long GetRange(double min, double max)
+        {
+            var roundedMin = (int)Math.Ceiling(min);
+            if (roundedMin == min)
+            {
+                roundedMin++;
             }
 
-            return winSum;
+            var roundedMax = (int)Math.Floor(max);
+            if (roundedMax == max)
+            {
+                roundedMax--;
+            }
+
+            return roundedMax - roundedMin + 1;
         }
 
         [GeneratedRegex(@"\d+")]
