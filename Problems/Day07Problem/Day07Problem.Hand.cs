@@ -44,35 +44,28 @@
 
             protected HandType GetHandTypeNoJokers()
             {
-                var groups = Cards.GroupBy(x => x);
-                switch (groups.Count())
+                var numGroups = Cards.GroupBy(x => x).Count();
+                var maxGroupSize = Cards
+                    .Where(x => x != 1)
+                    .GroupBy(x => x)
+                    .Select(x => x.Count())
+                    .GroupBy(x => x, (y, z) => new
+                    {
+                        Max = z.Max(),
+                        CountOfMax = z.Count(i => i == z.Max()),
+                    })
+                    .MaxBy(x => x.Max)!;
+
+                return ((maxGroupSize.Max, maxGroupSize.CountOfMax, numGroups)) switch
                 {
-                    case 1:
-                        // All the cards are the same, must be five of a kind
-                        return HandType.FiveOfAKind;
-                    case 2:
-                        {
-                            if (groups.Any(x => x.Count() == 2))
-                            {
-                                return HandType.FullHouse;
-                            }
-
-                            return HandType.FourOfAKind;
-                        }
-                    case 3:
-                        {
-                            if (groups.Any(x => x.Count() == 3))
-                            {
-                                return HandType.ThreeofAKind;
-                            }
-
-                            return HandType.TwoPair;
-                        }
-                    case 4:
-                        return HandType.OnePair;
-                    default:
-                        return HandType.HighCard;
-                }
+                    (5, _, _) => HandType.FiveOfAKind,
+                    (4, _, _) => HandType.FourOfAKind,
+                    (3, _, 2) => HandType.FullHouse,
+                    (3, _, _) => HandType.ThreeofAKind,
+                    (2, 2, _) => HandType.TwoPair,
+                    (2, 1, _) => HandType.OnePair,
+                    (_, _, _) => HandType.HighCard,
+                };
             }
 
             protected abstract int GetCardValue(char card);

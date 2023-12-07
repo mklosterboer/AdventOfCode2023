@@ -31,76 +31,46 @@
                         Max = z.Max(),
                         CountOfMax = z.Count(i => i == z.Max())
                     })
-                    .MaxBy(x => x.Max)!;
+                    .MaxBy(x => x.Max);
 
                 var numJokers = Cards.Count(x => x == 1);
-                switch (numJokers)
+
+                return (numJokers, maxGroupSize?.Max, maxGroupSize?.CountOfMax) switch
                 {
-                    case 5:
-                    case 4:
-                        // JJJJJ
-                        // 1 JJJJ
-                        return HandType.FiveOfAKind;
-                    case 3:
-                        {
-                            if (maxGroupSize.Max == 2)
-                            {
-                                // 11 JJJ
-                                return HandType.FiveOfAKind;
-                            }
-                            // 1 2 JJJ
-                            return HandType.FourOfAKind;
-                        }
-                    case 2:
-                        {
-                            if (maxGroupSize.Max == 3)
-                            {
-                                // 111 JJ
-                                return HandType.FiveOfAKind;
-                            }
+                    // JJJJJ
+                    // 1 JJJJ
+                    ( >= 4, _, _) => HandType.FiveOfAKind,
 
-                            if (maxGroupSize.Max == 2)
-                            {
-                                // 11 2 JJ
-                                return HandType.FourOfAKind;
-                            }
+                    // 11 JJJ
+                    (3, 2, _) => HandType.FiveOfAKind,
 
-                            // 1 2 3 JJ
-                            return HandType.ThreeofAKind;
-                        }
-                    case 1:
-                        {
-                            if (maxGroupSize.Max == 4)
-                            {
-                                // 1111 J
-                                return HandType.FiveOfAKind;
-                            }
+                    // 1 2 JJJ
+                    (3, _, _) => HandType.FourOfAKind,
 
-                            if (maxGroupSize.Max == 3)
-                            {
-                                // 111 2 J
-                                return HandType.FourOfAKind;
-                            }
+                    // 111 JJ
+                    (2, 3, _) => HandType.FiveOfAKind,
 
-                            if (maxGroupSize.Max == 2)
-                            {
-                                if (maxGroupSize.CountOfMax == 2)
-                                {
-                                    // 11 22 J
-                                    return HandType.FullHouse;
-                                }
+                    // 11 2 JJ
+                    (2, 2, _) => HandType.FourOfAKind,
 
-                                // 11 2 3 J
-                                return HandType.ThreeofAKind;
-                            }
+                    // 1 2 3 JJ
+                    (2, _, _) => HandType.ThreeofAKind,
 
-                            // 1 2 3 4 J 
-                            return HandType.OnePair;
-                        }
-                }
+                    // 1111 J
+                    (1, 4, _) => HandType.FiveOfAKind,
 
-                // We should never get here...
-                throw new NotImplementedException();
+                    // 111 2 J
+                    (1, 3, _) => HandType.FourOfAKind,
+
+                    // 11 22 J
+                    (1, 2, 2) => HandType.FullHouse,
+
+                    // 11 2 3 J
+                    (1, 2, _) => HandType.ThreeofAKind,
+
+                    // 1 2 3 4 J 
+                    (_, _, _) => HandType.OnePair,
+                };
             }
         }
     }
