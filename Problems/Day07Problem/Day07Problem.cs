@@ -11,7 +11,7 @@ namespace AdventOfCode2023.Problems
             var input = GetInputStringList().Select(x => x.Split(" "));
 
             var hands = input
-                .Select(x => new NormalHand(x[0], int.Parse(x[1])))
+                .Select(x => new Hand(x[0], int.Parse(x[1])))
                 .OrderBy(x => x)
                 .ToList();
 

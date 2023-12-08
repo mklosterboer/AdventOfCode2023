@@ -2,7 +2,7 @@
 {
     internal partial class Day07Problem
     {
-        private abstract class Hand : IComparable<Hand>
+        private class Hand : IComparable<Hand>
         {
             public List<int> Cards { get; init; }
 
@@ -42,21 +42,24 @@
 
             public override string ToString() => $"{OriginalHand} {Bid} {HandType}";
 
-            protected HandType GetHandTypeNoJokers()
+            protected virtual HandType GetHandType()
             {
-                var numGroups = Cards.GroupBy(x => x).Count();
-                var maxGroupSize = Cards
+                // Finds the largest set of the same card
+                // Returns the size of that set and how many sets exists of this size
+                var maxSetSize = Cards
                     .Where(x => x != 1)
                     .GroupBy(x => x)
                     .Select(x => x.Count())
                     .GroupBy(x => x, (y, z) => new
                     {
-                        Max = z.Max(),
-                        CountOfMax = z.Count(i => i == z.Max()),
+                        Value = z.Max(),
+                        NumSets = z.Count(i => i == z.Max()),
                     })
-                    .MaxBy(x => x.Max)!;
+                    .MaxBy(x => x.Value)!;
 
-                return ((maxGroupSize.Max, maxGroupSize.CountOfMax, numGroups)) switch
+                var numGroups = Cards.GroupBy(x => x).Count();
+
+                return ((maxSetSize.Value, maxSetSize.NumSets, numGroups)) switch
                 {
                     (5, _, _) => HandType.FiveOfAKind,
                     (4, _, _) => HandType.FourOfAKind,
@@ -68,9 +71,15 @@
                 };
             }
 
-            protected abstract int GetCardValue(char card);
-
-            protected abstract HandType GetHandType();
+            protected virtual int GetCardValue(char card) => card switch
+            {
+                'A' => 14,
+                'K' => 13,
+                'Q' => 12,
+                'J' => 11,
+                'T' => 10,
+                _ => (int)char.GetNumericValue(card),
+            };
         }
     }
 }
